@@ -1,0 +1,54 @@
+---
+
+### 🔧 Code with Comments:
+
+```scl
+// Set assumed PLC scan cycle time (in seconds)
+// Adjust this if your OB cycle time is different
+#CycleTime := 0.005; // 5 ms
+
+// Calculate ramp step size based on rate (units/sec) and cycle time
+#Step := #Ramp_Rate * #CycleTime;
+
+// Select target value based on ramp direction
+IF #Enable_Up THEN
+    #Target := #Target_Up;
+ELSIF #Enable_Down THEN
+    #Target := #Target_Down;
+ELSE
+    #Target := #Out; // Hold current value if neither enabled
+END_IF;
+
+// Ramp logic – adjust output value toward target
+IF (#Target > #Out) AND #Enable_Up THEN
+    // Ramp upward, but clamp at target
+    #Out := MIN_REAL(IN1 := #Out + #Step, IN2 := #Target);
+ELSIF (#Target < #Out) AND #Enable_Down THEN
+    // Ramp downward, but clamp at target
+    #Out := MAX_REAL(IN1 := #Target, IN2 := #Out - #Step);
+END_IF;
+```
+
+---
+
+### 📋 Variable Table Documentation:
+
+| Name          | Type | Default | Description                                                |
+| ------------- | ---- | ------- | ---------------------------------------------------------- |
+| `Target_Up`   | REAL | 0.0     | Target value to ramp up toward when `Enable_Up = TRUE`     |
+| `Target_Down` | REAL | 0.0     | Target value to ramp down toward when `Enable_Down = TRUE` |
+| `Enable_Up`   | BOOL | FALSE   | When TRUE, ramps output up toward `Target_Up`              |
+| `Enable_Down` | BOOL | FALSE   | When TRUE, ramps output down toward `Target_Down`          |
+| `Ramp_Rate`   | REAL | 0.0     | Ramp speed in units per second                             |
+| `Out`         | REAL | 0.0     | Current ramped output value                                |
+
+**Static Variables (internal memory, retained across scans):**
+
+| Name        | Type | Default | Description                                               |
+| ----------- | ---- | ------- | --------------------------------------------------------- |
+| `Target`    | REAL | 0.0     | Currently selected target (up or down)                    |
+| `NowTime`   | TIME | T#0ms   | \[Reserved] For future time-based ramping                 |
+| `DeltaTime` | REAL | 0.0     | \[Reserved] For future use if calculating real delta time |
+| `Step`      | REAL | 0.0     | Current step size calculated from rate and cycle time     |
+| `CycleTime` | REAL | 0.0     | PLC cycle time in seconds (set to 0.005 for 5ms)          |
+
